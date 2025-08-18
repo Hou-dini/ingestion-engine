@@ -1,0 +1,10 @@
+{
+  "typeCheckingMode": "basic",
+  "reportMissingTypeStubs": false,
+  "executionEnvironments": [
+    {
+      "root": "./src",
+      "extraPaths": ["./src"]
+    }
+  ]
+}
