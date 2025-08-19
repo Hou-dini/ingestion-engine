@@ -1,7 +1,7 @@
 import asyncio
-from config.settings import load_settings
-from ingestion.strategies.reddit_strategy import RedditIngestionStrategy
-from core.models import Source
+from src.config.settings import load_settings
+from src.ingestion.strategies.reddit_strategy import RedditIngestionStrategy
+from src.core.models import Source
 
 
 async def main():

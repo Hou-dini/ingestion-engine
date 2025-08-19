@@ -1,11 +1,11 @@
 import asyncio
 from typing import Dict, Type, List
 
-from config.settings import load_settings, Settings
-from core.models import Source, Post
-from ingestion.strategies.base_strategy import IngestionStrategy
-from ingestion.strategies.reddit_strategy import RedditIngestionStrategy
-from storage.gcs_client import GCSClient
+from ..config.settings import load_settings, Settings
+from .models import Source, Post
+from ..ingestion.strategies.base_strategy import IngestionStrategy
+from ..ingestion.strategies.reddit_strategy import RedditIngestionStrategy
+from ..storage.gcs_client import GCSClient
 
 class IngestionCoordinator:
     """

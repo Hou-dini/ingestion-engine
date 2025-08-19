@@ -26,6 +26,8 @@ build-backend = "setuptools.build_meta"
 dev = [
     "pytest",
     "pytest-mock",
+    "pytest-asyncio",
+    "anyio",
     "types-requests",  # example of type stubs
     "google-cloud-storage",
     "praw"

@@ -2,8 +2,8 @@ import asyncio
 from typing import List, Optional
 from datetime import datetime
 
-from ingestion.strategies.base_strategy import IngestionStrategy
-from core.models import Source, Post
+from .base_strategy import IngestionStrategy
+from ...core.models import Source, Post
 import asyncio
 from typing import List, Any
 from datetime import datetime

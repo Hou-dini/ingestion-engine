@@ -7,7 +7,7 @@ from typing import List, Any, Optional, cast
 from dataclasses import asdict
 from datetime import datetime
 
-from core.models import Post
+from ..core.models import Post
 from config.settings import load_settings
 import os
 

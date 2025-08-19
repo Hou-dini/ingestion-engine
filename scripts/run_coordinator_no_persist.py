@@ -1,9 +1,9 @@
 import asyncio
 import os
 from dotenv import find_dotenv
-from core.coordinator import IngestionCoordinator
-from storage.gcs_client import GCSClient
-from config.settings import load_settings
+from src.core.coordinator import IngestionCoordinator
+from src.storage.gcs_client import GCSClient
+from src.config.settings import load_settings
 
 
 def redact(v: str) -> str:

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 # We import the models we've already defined.
-from core.models import Source, Post
+from ...core.models import Source, Post
 
 
 class IngestionStrategy(ABC):
