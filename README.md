@@ -32,3 +32,23 @@ $env:PYTHONPATH = "${PWD}\src"; C:/Users/Trudy/foresight_engine/.venv/Scripts/py
 ```
 
 This script only prints posts to the console and does not persist them to Google Cloud Storage.
+
+Secrets helpers
+---------------
+To avoid putting credentials in a `.env` file for local testing, you can store secrets in a secrets backend and load them into your session using the helper scripts:
+
+- PowerShell (Windows, uses SecretManagement/SecretStore):
+
+```powershell
+.\scripts\load_secrets_and_run.ps1 -VaultName LocalStore
+```
+
+- POSIX (macOS/Linux):
+
+```bash
+source ./scripts/load_secrets_and_run.sh --run
+```
+
+Both helpers print redacted diagnostics and set the following environment variables in the current session if available: `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USER_AGENT`, `GCS_CREDENTIALS_JSON`, `GCS_BUCKET_NAME`.
+
+If you prefer not to keep a `.env` file in the repo, you may safely delete it; the code will fall back to process environment variables or SecretManagement helpers. Never commit secret files to source control.

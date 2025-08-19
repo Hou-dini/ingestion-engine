@@ -4,132 +4,159 @@ from datetime import datetime
 
 from ingestion.strategies.base_strategy import IngestionStrategy
 from core.models import Source, Post
+import asyncio
+from typing import List, Any
+from datetime import datetime
+
+from ingestion.strategies.base_strategy import IngestionStrategy
+from core.models import Source, Post
 from config.settings import load_settings
 
-# Prefer asyncpraw when available to avoid running sync PRAW in async contexts.
+# Optional async/sync PRAW imports
 try:
     import asyncpraw as praw_async  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
+except Exception:
     praw_async = None
 
 try:
     import praw  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
+except Exception:
     praw = None
 
 
 class RedditIngestionStrategy(IngestionStrategy):
-    """
-    A concrete implementation of the IngestionStrategy for Reddit.
-    
-    This class handles authentication, data retrieval from Reddit, and
-    normalization of the data into our core Post model.
-    """
+    """Concrete ingestion strategy for Reddit with clearer error handling."""
 
     def __init__(self, source: Source):
-        """
-        Initializes the Reddit strategy with a specific source.
-        We also load the application settings here to get our API keys.
-        """
-    super().__init__(source)
-    self.settings = load_settings()
-    self.reddit = None
-    self._using_asyncpraw = False
+        # Explicit two-argument super to be robust in all contexts.
+        super(RedditIngestionStrategy, self).__init__(source)
+        self.settings = load_settings()
+        self.reddit: Any = None
+        self.using_asyncpraw: bool = False
 
     async def authenticate(self) -> None:
-        """
-        Authenticates with the Reddit API using PRAW.
-        
-        This method uses the client ID and secret from our settings to create
-        a Reddit instance. The `readonly` flag ensures we don't accidentally
-        perform any write operations.
-        """
+        """Authenticate using asyncpraw when available, else fallback to praw."""
+        client_id = (self.settings.REDDIT_CLIENT_ID or "").strip()
+        client_secret = (self.settings.REDDIT_CLIENT_SECRET or "").strip()
+
+        if not client_id or client_id.startswith("your_"):
+            print("Reddit credentials missing or look like placeholders; update .env or env vars.")
+            self.reddit = None
+            return
+
         try:
             if praw_async is not None:
-                # Use asyncpraw which is designed for asyncio.
+                # Async PRAW
                 self.reddit = praw_async.Reddit(
-                    client_id=self.settings.REDDIT_CLIENT_ID,
-                    client_secret=self.settings.REDDIT_CLIENT_SECRET,
-                    user_agent=self.settings.REDDIT_USER_AGENT or "ForesightEngine/1.0"
+                    client_id=client_id,
+                    client_secret=client_secret,
+                    user_agent=self.settings.REDDIT_USER_AGENT or "ForesightEngine/1.0 (by u/Playful_Concert3298)",
                 )
-                self._using_asyncpraw = True
-                # Validate credentials by making a lightweight async request.
+                self.using_asyncpraw = True
                 await self.reddit.user.me()
-                print(f"Successfully authenticated with Async PRAW for source: {self.source.name}")
-            elif praw is not None:
-                # Fall back to synchronous PRAW but run blocking calls in a thread.
+                print(f"Authenticated with Async PRAW for source: {self.source.name}")
+                return
+
+            if praw is not None:
+                # Sync PRAW fallback; run blocking calls in thread.
                 self.reddit = praw.Reddit(
-                    client_id=self.settings.REDDIT_CLIENT_ID,
-                    client_secret=self.settings.REDDIT_CLIENT_SECRET,
-                    user_agent=self.settings.REDDIT_USER_AGENT or "ForesightEngine/1.0"
+                    client_id=client_id,
+                    client_secret=client_secret,
+                    user_agent=self.settings.REDDIT_USER_AGENT or "ForesightEngine/1.0 (by u/Playful_Concert3298)",
                 )
                 await asyncio.to_thread(lambda: self.reddit.user.me())  # type: ignore[attr-defined]
-                print(f"Successfully authenticated with PRAW for source: {self.source.name}")
-            else:
-                raise RuntimeError("No PRAW or Async PRAW installation found")
-        except Exception as e:
-            print(f"Authentication failed for Reddit source: {self.source.name} with error: {e}")
+                print(f"Authenticated with PRAW for source: {self.source.name}")
+                return
+
+            print("Neither asyncpraw nor praw is installed; cannot authenticate to Reddit.")
+            self.reddit = None
+        except Exception as exc:
+            print(f"Reddit authentication failed for {self.source.name}: {type(exc).__name__}: {exc}")
             self.reddit = None
 
     async def ingest_data(self) -> List[Post]:
-        """
-        Ingests data from the specified Reddit subreddit.
-        
-        This method retrieves the 'hot' posts from the subreddit, transforms
-        each post into a Post object, and returns a list of them.
-        """
         if not self.reddit:
-            print("Authentication failed. Cannot ingest data.")
+            print("Authentication not completed. Skipping ingestion.")
             return []
+        # Normalize subreddit names so callers can pass 'r/Name', '/r/Name', full URLs,
+        # or just the bare subreddit. This prevents passing invalid values to PRAW
+        # which can result in 400 BadRequest responses.
+        def _normalize_subreddit_name(name: str) -> str:
+            if not name:
+                return ""
+            n = name.strip()
+            # If a full URL was provided, attempt to extract the subreddit segment.
+            if "reddit.com" in n:
+                # Look for the '/r/<sub>' pattern
+                idx = n.find("/r/")
+                if idx != -1:
+                    n = n[idx + 3 :]
+            # Remove leading '/r/' or 'r/' prefixes
+            if n.startswith("/r/"):
+                n = n[3:]
+            elif n.startswith("r/"):
+                n = n[2:]
+            # Strip any leading/trailing slashes and take the last path segment
+            n = n.strip("/ ")
+            if "/" in n:
+                parts = [p for p in n.split("/") if p]
+                if parts:
+                    n = parts[-1]
+            return n
 
-        subreddit_name = self.source.name
+        subreddit_name = _normalize_subreddit_name(self.source.name)
+        posts: List[Post] = []
 
         try:
-            posts: List[Post] = []
-
-            if self._using_asyncpraw:
-                # asyncpraw returns an async generator for listings
-                # reddit.subreddit(...) returns a Subreddit object (not awaitable).
-                subreddit = self.reddit.subreddit(subreddit_name)
-                async for submission in subreddit.hot(limit=25):
-                    post = Post(
-                        source_id=self.source.id,
-                        title=submission.title,
-                        content=getattr(submission, "selftext", ""),
-                        author=getattr(submission.author, "name", "Deleted") if submission.author else "Deleted",
-                        url=submission.url,
-                        created_at=datetime.fromtimestamp(submission.created_utc),
-                        metadata={
-                            "score": getattr(submission, "score", 0),
-                            "num_comments": getattr(submission, "num_comments", 0)
-                        }
-                    )
-                    posts.append(post)
+            if self.using_asyncpraw:
+                # asyncpraw: subreddit() is a coroutine in some versions and must be awaited.
+                print(f"Using subreddit: {subreddit_name} (normalized from {self.source.name})")
+                subreddit = await self.reddit.subreddit(subreddit_name)  # type: ignore
+                # asyncpraw's listing yields an async generator
+                async for submission in subreddit.hot(limit=25):  # type: ignore
+                    posts.append(self._normalize_submission(submission))
             else:
-                # Synchronous PRAW: run blocking calls in a thread
                 def _sync_fetch():
-                    subreddit = self.reddit.subreddit(subreddit_name)  # type: ignore[attr-defined]
-                    return list(subreddit.hot(limit=25))  # type: ignore[attr-defined]
+                    sub = self.reddit.subreddit(subreddit_name)  # type: ignore[attr-defined]
+                    return list(sub.hot(limit=25))  # type: ignore[attr-defined]
 
                 submissions = await asyncio.to_thread(_sync_fetch)
                 for submission in submissions:
-                    post = Post(
-                        source_id=self.source.id,
-                        title=submission.title,
-                        content=getattr(submission, "selftext", ""),
-                        author=submission.author.name if submission.author else "Deleted",
-                        url=submission.url,
-                        created_at=datetime.fromtimestamp(submission.created_utc),
-                        metadata={
-                            "score": getattr(submission, "score", 0),
-                            "num_comments": getattr(submission, "num_comments", 0)
-                        }
-                    )
-                    posts.append(post)
+                    posts.append(self._normalize_submission(submission))
 
             print(f"Ingested {len(posts)} posts from subreddit: {subreddit_name}")
             return posts
-
-        except Exception as e:
-            print(f"An error occurred during Reddit ingestion for source: {self.source.name}: {e}")
+        except Exception as exc:
+            print(f"Error ingesting from {subreddit_name}: {type(exc).__name__}: {exc}")
             return []
+        finally:
+            # Close asyncpraw client session if we created one to avoid resource warnings.
+            try:
+                if self.using_asyncpraw and getattr(self.reddit, "close", None):
+                    await self.reddit.close()  # type: ignore
+            except Exception:
+                # Best-effort cleanup; do not mask the main exception path.
+                pass
+
+    def _normalize_submission(self, submission: object) -> Post:
+        # Defensive attribute access for third-party objects
+        author = getattr(submission, "author", None)
+        author_name = getattr(author, "name", "Deleted") if author else "Deleted"
+        created = getattr(submission, "created_utc", None)
+        if created:
+            created_at = datetime.fromtimestamp(created)
+        else:
+            created_at = datetime.utcnow()
+
+        return Post(
+            source_id=self.source.id,
+            title=getattr(submission, "title", ""),
+            content=getattr(submission, "selftext", ""),
+            author=author_name,
+            url=getattr(submission, "url", ""),
+            created_at=created_at,
+            metadata={
+                "score": getattr(submission, "score", 0),
+                "num_comments": getattr(submission, "num_comments", 0),
+            },
+        )

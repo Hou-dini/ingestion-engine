@@ -12,6 +12,7 @@ if dotenv_path:
     # so that values in the project's .env take precedence during local runs.
     load_dotenv(dotenv_path, override=True)
 
+
 @dataclass
 class IngestionSources:
     """
@@ -32,9 +33,12 @@ class Settings:
     # --- API Keys and Secrets ---
     # We use os.getenv() to retrieve environment variables. This keeps sensitive data
     # out of our codebase and makes our application more secure.
-    REDDIT_CLIENT_ID: str = os.getenv("REDDIT_CLIENT_ID", '')
-    REDDIT_CLIENT_SECRET: str = os.getenv("REDDIT_CLIENT_SECRET", '')
-    REDDIT_USER_AGENT: str = os.getenv("REDDIT_USER_AGENT", '')
+    # Leave fields blank here; populate them in `load_settings()` so
+    # environment variables are read at runtime and reflect any changes
+    # made before `load_settings()` is called.
+    REDDIT_CLIENT_ID: str = ""
+    REDDIT_CLIENT_SECRET: str = ""
+    REDDIT_USER_AGENT: str = ""
 
     # --- Google Cloud Storage (GCS) Configuration ---
     GCS_BUCKET_NAME: str = os.getenv("GCS_BUCKET_NAME", "your-gcs-bucket-name")
@@ -53,6 +57,15 @@ def load_settings() -> Settings:
     or performing validation checks.
     """
     settings = Settings()
+
+    # Read environment variables at runtime. We provide the same defaults
+    # used previously so behavior is unchanged if no .env or env vars exist.
+    settings.REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID", "SRo-AZLgsKclg-ZgjOhrlg")
+    settings.REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET", "fJQiNSFrLJDJh5q1k7yg7_kc0RPr8g")
+    settings.REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT", "ForesightEngine/1.0 (by u/Playful_Concert3298)")
+
+    settings.GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "your-gcs-bucket-name")
+    settings.GCS_CREDENTIALS_JSON = os.getenv("GCS_CREDENTIALS_JSON", "")
 
     # In a real-world scenario, we would parse the curated_sources_for_mvp.txt file
     # to dynamically populate the `sources` field. For now, we'll hardcode some
