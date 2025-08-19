@@ -41,8 +41,8 @@ class Settings:
     REDDIT_USER_AGENT: str = ""
 
     # --- Google Cloud Storage (GCS) Configuration ---
-    GCS_BUCKET_NAME: str = os.getenv("GCS_BUCKET_NAME", "your-gcs-bucket-name")
-    GCS_CREDENTIALS_JSON: str = os.getenv("GCS_CREDENTIALS_JSON", "")
+    GCS_BUCKET_NAME: str = ""
+    GCS_CREDENTIALS_JSON: str = ""
 
     # --- Ingestion Configuration ---
     # This stores the URLs and information for the sources we will be ingesting.
@@ -60,9 +60,9 @@ def load_settings() -> Settings:
 
     # Read environment variables at runtime. We provide the same defaults
     # used previously so behavior is unchanged if no .env or env vars exist.
-    settings.REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID", "SRo-AZLgsKclg-ZgjOhrlg")
-    settings.REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET", "fJQiNSFrLJDJh5q1k7yg7_kc0RPr8g")
-    settings.REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT", "ForesightEngine/1.0 (by u/Playful_Concert3298)")
+    settings.REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID", "")
+    settings.REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET", "")
+    settings.REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT", "")
 
     settings.GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "your-gcs-bucket-name")
     settings.GCS_CREDENTIALS_JSON = os.getenv("GCS_CREDENTIALS_JSON", "")
