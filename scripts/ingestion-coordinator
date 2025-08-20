@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Small wrapper to run the installed module entrypoint in a reproducible way.
+exec python -m src.cli.coordinator "$@"

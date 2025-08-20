@@ -1,7 +1,7 @@
 import asyncio
 import os
 from dotenv import find_dotenv
-from src.core.coordinator import IngestionCoordinator
+from src.cli.coordinator import run as run_coordinator
 from src.storage.gcs_client import GCSClient
 from src.config.settings import load_settings
 
@@ -33,8 +33,8 @@ if __name__ == '__main__':
     print(f"  REDDIT_USER_AGENT={settings.REDDIT_USER_AGENT}")
 
     try:
-        coordinator = IngestionCoordinator()
-        asyncio.run(coordinator.run())
+        # Use the CLI wrapper which handles the asyncio loop for us
+        run_coordinator(skip_persist=True)
     finally:
         # Restore original method
         GCSClient.save_posts_as_json = original_save

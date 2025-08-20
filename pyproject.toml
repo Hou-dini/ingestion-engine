@@ -1,5 +1,5 @@
 [project]
-name = "foresight_engine"
+name = "ingestion_engine"
 version = "0.1.0"
 description = "A data ingestion engine for monitoring online sources."
 requires-python = ">=3.9"
@@ -32,3 +32,6 @@ dev = [
     "google-cloud-storage",
     "praw"
 ]
+
+[project.scripts]
+ingestion-coordinator = "src.cli.coordinator:run"

@@ -1,16 +1,10 @@
 import asyncio
-from typing import List, Optional
+from typing import List, Any, Optional
 from datetime import datetime
 
 from .base_strategy import IngestionStrategy
 from ...core.models import Source, Post
-import asyncio
-from typing import List, Any
-from datetime import datetime
-
-from ingestion.strategies.base_strategy import IngestionStrategy
-from core.models import Source, Post
-from config.settings import load_settings
+from ...config.settings import load_settings
 
 # Optional async/sync PRAW imports
 try:
@@ -50,7 +44,7 @@ class RedditIngestionStrategy(IngestionStrategy):
                 self.reddit = praw_async.Reddit(
                     client_id=client_id,
                     client_secret=client_secret,
-                    user_agent=self.settings.REDDIT_USER_AGENT or "ForesightEngine/1.0 (by u/Playful_Concert3298)",
+                    user_agent=self.settings.REDDIT_USER_AGENT or "IngestionEngine/1.0 (by u/Playful_Concert3298)",
                 )
                 self.using_asyncpraw = True
                 await self.reddit.user.me()
@@ -62,7 +56,7 @@ class RedditIngestionStrategy(IngestionStrategy):
                 self.reddit = praw.Reddit(
                     client_id=client_id,
                     client_secret=client_secret,
-                    user_agent=self.settings.REDDIT_USER_AGENT or "ForesightEngine/1.0 (by u/Playful_Concert3298)",
+                    user_agent=self.settings.REDDIT_USER_AGENT or "IngestionEngine/1.0 (by u/Playful_Concert3298)",
                 )
                 await asyncio.to_thread(lambda: self.reddit.user.me())  # type: ignore[attr-defined]
                 print(f"Authenticated with PRAW for source: {self.source.name}")
