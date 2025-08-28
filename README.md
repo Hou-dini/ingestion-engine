@@ -164,3 +164,13 @@ Security notes
 - Rotate secrets regularly and remove `RUN_INTEGRATION_TESTS` or set it to `false` when you do not want integration jobs to run.
 
 When you're ready and the secrets are added, push your changes and the `integration` job will run automatically when `RUN_INTEGRATION_TESTS` is `true`.
+
+## Contributing
+
+This project is ongoing and forms a key component for a Media Intelligence Platform prototype. Feel free to explore, provide feedback, or suggest improvements.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**Designed and Developed by Elikplim Kudowor.**
