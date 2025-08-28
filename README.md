@@ -167,7 +167,7 @@ When you're ready and the secrets are added, push your changes and the `integrat
 
 ## Contributing
 
-This project is ongoing and forms a key component for a Media Intelligence Platform prototype. Feel free to explore, provide feedback, or suggest improvements.
+This project is ongoing and forms a key component for a **Media Intelligence Platform** prototype. Feel free to explore, provide feedback, or suggest improvements.
 
 ## License
 
